@@ -5,7 +5,9 @@ import 'package:provider/provider.dart';
 import 'core/constants/app_themes.dart';
 import 'data/datasources/local/database_helper.dart';
 import 'data/repositories/transaction_repository_impl.dart';
+import 'data/repositories/category_repository_impl.dart';
 import 'presentation/providers/transaction_provider.dart';
+import 'presentation/providers/category_provider.dart';
 import 'presentation/screens/home/modern_home_screen.dart';
 
 void main() async {
@@ -54,6 +56,13 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => TransactionProvider(
             TransactionRepositoryImpl(DatabaseHelper.instance),
+          ),
+        ),
+
+        // Category Provider
+        ChangeNotifierProvider(
+          create: (_) => CategoryProvider(
+            CategoryRepositoryImpl(DatabaseHelper.instance),
           ),
         ),
       ],

@@ -9,6 +9,7 @@ import '../../providers/transaction_provider.dart';
 import '../../widgets/animated_balance_card.dart';
 import '../../widgets/modern_transaction_card.dart';
 import '../transactions/add_transaction_screen.dart';
+import '../transactions/transaction_list_screen.dart';
 
 class ModernHomeScreen extends StatefulWidget {
   const ModernHomeScreen({super.key});
@@ -606,8 +607,27 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
   }
 
   void _navigateToAllTransactions() {
-    // TODO: Implement navigation to all transactions screen
-    print('Navigate to All Transactions');
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+        const TransactionListScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(1.0, 0.0);
+          const end = Offset.zero;
+          const curve = Curves.easeOutCubic;
+
+          var tween = Tween(begin: begin, end: end).chain(
+            CurveTween(curve: curve),
+          );
+
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 400),
+      ),
+    );
   }
 
   void _showTransactionDetails(transaction) {

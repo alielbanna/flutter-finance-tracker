@@ -8,7 +8,7 @@ import 'data/repositories/transaction_repository_impl.dart';
 import 'data/repositories/category_repository_impl.dart';
 import 'presentation/providers/transaction_provider.dart';
 import 'presentation/providers/category_provider.dart';
-import 'presentation/screens/home/modern_home_screen.dart';
+import 'presentation/screens/main_navigation_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -71,7 +71,7 @@ class MyApp extends StatelessWidget {
         theme: AppThemes.lightTheme,
         darkTheme: AppThemes.darkTheme,
         themeMode: ThemeMode.system,
-        home: const ModernHomeScreen(),
+        home: const MainNavigationScreen(),
         debugShowCheckedModeBanner: false,
 
         // Enhanced visual density for better touch targets

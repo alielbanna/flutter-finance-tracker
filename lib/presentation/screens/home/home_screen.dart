@@ -7,30 +7,24 @@ import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../providers/transaction_provider.dart';
 import '../../widgets/animated_balance_card.dart';
-import '../../widgets/modern_transaction_card.dart';
+import '../../widgets/transaction_card.dart';
 import '../transactions/add_transaction_screen.dart';
 import '../transactions/transaction_list_screen.dart';
 
-class ModernHomeScreen extends StatefulWidget {
-  const ModernHomeScreen({super.key});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
   @override
-  State<ModernHomeScreen> createState() => _ModernHomeScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _ModernHomeScreenState extends State<ModernHomeScreen>
-    with TickerProviderStateMixin {
-  late AnimationController _refreshController;
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _fabController;
 
   @override
   void initState() {
     super.initState();
-
-    _refreshController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
-      vsync: this,
-    );
 
     _fabController = AnimationController(
       duration: const Duration(milliseconds: 300),
@@ -39,14 +33,15 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
 
     // Load data on init
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<TransactionProvider>().loadTransactions();
-      _fabController.forward();
+      if (mounted) {
+        context.read<TransactionProvider>().loadTransactions();
+        _fabController.forward();
+      }
     });
   }
 
   @override
   void dispose() {
-    _refreshController.dispose();
     _fabController.dispose();
     super.dispose();
   }
@@ -58,7 +53,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // Modern App Bar
+          // Modern App Bar - NO ANIMATION ON SLIVER!
           _buildModernAppBar(),
 
           // Balance Card
@@ -72,11 +67,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
                   onTap: () => _showBalanceDetails(context),
                 );
               },
-            ).animate().slideY(
-              begin: -0.5,
-              duration: 800.ms,
-              curve: Curves.easeOutCubic,
-            ).fadeIn(duration: 800.ms),
+            ),
           ),
 
           // Quick Actions
@@ -91,11 +82,16 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Recent Transactions',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                  Flexible(
+                    child: Text(
+                      'Recent Transactions',
+                      style:
+                      Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   TextButton.icon(
@@ -107,12 +103,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
                     ),
                   ),
                 ],
-              ).animate().slideY(
-                begin: 0.3,
-                delay: 600.ms,
-                duration: 600.ms,
-                curve: Curves.easeOutCubic,
-              ).fadeIn(delay: 600.ms),
+              ),
             ),
           ),
 
@@ -151,7 +142,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
                       child: SlideAnimation(
                         verticalOffset: 50.0,
                         child: FadeInAnimation(
-                          child: ModernTransactionCard(
+                          child: TransactionCard(
                             transaction: transaction,
                             index: index,
                             onTap: () => _showTransactionDetails(transaction),
@@ -176,39 +167,58 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
       ),
 
       // Modern Floating Action Button
-      floatingActionButton: ScaleTransition(
-        scale: _fabController,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha:0.4),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: FloatingActionButton.extended(
-            onPressed: () => _navigateToAddTransaction(),
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            icon: const Icon(Icons.add_rounded, color: Colors.white),
-            label: const Text(
-              'Add Transaction',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
-      ),
+      // floatingActionButton: ScaleTransition(
+      //   scale: CurvedAnimation(
+      //     parent: _fabController,
+      //     curve: Curves.easeOutBack,
+      //   ),
+      //   child: Container(
+      //     decoration: BoxDecoration(
+      //       gradient: AppColors.primaryGradient,
+      //       borderRadius: BorderRadius.circular(16),
+      //       boxShadow: [
+      //         BoxShadow(
+      //           color: AppColors.primary.withValues(alpha: 0.4),
+      //           blurRadius: 20,
+      //           offset: const Offset(0, 8),
+      //         ),
+      //       ],
+      //     ),
+      //     child: Material(
+      //       color: Colors.transparent,
+      //       child: InkWell(
+      //         onTap: () => _navigateToAddTransaction(),
+      //         borderRadius: BorderRadius.circular(16),
+      //         child: Container(
+      //           padding: const EdgeInsets.symmetric(
+      //             horizontal: 20,
+      //             vertical: 14,
+      //           ),
+      //           child: Row(
+      //             mainAxisSize: MainAxisSize.min,
+      //             children: const [
+      //               Icon(Icons.add_rounded, color: Colors.white),
+      //               SizedBox(width: 8),
+      //               Text(
+      //                 'Add Transaction',
+      //                 style: TextStyle(
+      //                   color: Colors.white,
+      //                   fontWeight: FontWeight.w600,
+      //                 ),
+      //               ),
+      //             ],
+      //           ),
+      //         ),
+      //       ),
+      //     ),
+      //   ),
+      // ),
     );
   }
 
   Widget _buildModernAppBar() {
+    // CRITICAL: Cannot use .animate() on SliverAppBar!
+    // Slivers MUST return RenderSliver, not RenderBox
     return SliverAppBar(
       expandedHeight: 120,
       floating: false,
@@ -235,31 +245,44 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Good ${_getGreeting()}',
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: Colors.white.withValues(alpha:0.9),
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Good ${_getGreeting()}',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyLarge
+                                  ?.copyWith(
+                                color: Colors.white.withValues(alpha: 0.9),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                          Text(
-                            'Money Master',
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
+                            Text(
+                              'Money Master',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineMedium
+                                  ?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-
                       Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           // Search Button
                           Container(
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha:0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: IconButton(
@@ -270,13 +293,11 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
                               ),
                             ),
                           ),
-
                           const SizedBox(width: 8),
-
                           // Notifications Button
                           Container(
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha:0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: IconButton(
@@ -298,12 +319,12 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
           ),
         ),
       ),
-    ).animate().slideY(begin: -1, duration: 800.ms, curve: Curves.easeOutCubic);
+    );
   }
 
   Widget _buildQuickActions() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Row(
         children: [
           Expanded(
@@ -334,12 +355,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
           ),
         ],
       ),
-    ).animate().slideY(
-      begin: 0.5,
-      delay: 400.ms,
-      duration: 600.ms,
-      curve: Curves.easeOutCubic,
-    ).fadeIn(delay: 400.ms);
+    );
   }
 
   Widget _buildQuickActionCard(
@@ -360,18 +376,19 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: gradient.colors.first.withValues(alpha:0.3),
+              color: gradient.colors.first.withValues(alpha: 0.3),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha:0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
@@ -388,6 +405,8 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
                 fontWeight: FontWeight.w600,
               ),
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -424,11 +443,11 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
                 ),
               ),
               const SizedBox(width: 16),
-
               // Content shimmer
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
                       height: 16,
@@ -450,9 +469,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
                   ],
                 ),
               ),
-
               const SizedBox(width: 12),
-
               // Amount shimmer
               Container(
                 height: 20,
@@ -464,6 +481,11 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
               ),
             ],
           ),
+        )
+            .animate(onPlay: (controller) => controller.repeat(reverse: true))
+            .shimmer(
+          duration: 1200.ms,
+          color: Colors.white.withValues(alpha: 0.5),
         );
       }),
     );
@@ -474,11 +496,12 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.error.withValues(alpha:0.1),
+        color: AppColors.error.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.error.withValues(alpha:0.3)),
+        border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             Icons.error_outline_rounded,
@@ -521,10 +544,11 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(48),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               gradient: AppColors.primaryGradient,
               shape: BoxShape.circle,
             ),
@@ -601,7 +625,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
     );
 
     // Refresh data if transaction was added
-    if (result != null) {
+    if (result != null && mounted) {
       context.read<TransactionProvider>().refresh();
     }
   }
@@ -631,23 +655,21 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
   }
 
   void _showTransactionDetails(transaction) {
-    // TODO: Show transaction details modal
-    print('Show transaction details: ${transaction.id}');
+    debugPrint('Show transaction details: ${transaction.id}');
   }
 
   void _editTransaction(transaction) {
-    // TODO: Navigate to edit transaction screen
     HapticFeedback.lightImpact();
-    print('Edit transaction: ${transaction.id}');
+    debugPrint('Edit transaction: ${transaction.id}');
   }
 
   void _deleteTransaction(transaction) {
-    // Show confirmation dialog
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Transaction'),
-        content: const Text('Are you sure you want to delete this transaction?'),
+        content:
+        const Text('Are you sure you want to delete this transaction?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -655,7 +677,9 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
           ),
           ElevatedButton(
             onPressed: () {
-              context.read<TransactionProvider>().deleteTransaction(transaction.id);
+              context
+                  .read<TransactionProvider>()
+                  .deleteTransaction(transaction.id);
               Navigator.of(context).pop();
               HapticFeedback.heavyImpact();
             },
@@ -668,34 +692,28 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
   }
 
   void _showBalanceDetails(BuildContext context) {
-    // TODO: Show balance details modal
-    print('Show balance details');
+    debugPrint('Show balance details');
   }
 
   void _showSearchModal() {
-    // TODO: Show search modal
-    print('Show search modal');
+    debugPrint('Show search modal');
   }
 
   void _showNotifications() {
-    // TODO: Show notifications
-    print('Show notifications');
+    debugPrint('Show notifications');
   }
 
   void _quickSendMoney() {
-    // TODO: Quick send money flow
     HapticFeedback.lightImpact();
-    print('Quick send money');
+    debugPrint('Quick send money');
   }
 
   void _quickReceiveMoney() {
-    // TODO: Quick receive money flow
     HapticFeedback.lightImpact();
-    print('Quick receive money');
+    debugPrint('Quick receive money');
   }
 
   void _navigateToBudget() {
-    // TODO: Navigate to budget screen
-    print('Navigate to budget');
+    debugPrint('Navigate to budget');
   }
 }

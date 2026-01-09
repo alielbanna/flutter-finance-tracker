@@ -9,7 +9,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../domain/entities/transaction.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/category_provider.dart';
-import '../../widgets/modern_transaction_card.dart';
+import '../../widgets/transaction_card.dart';
 import 'add_transaction_screen.dart';
 
 class TransactionListScreen extends StatefulWidget {
@@ -392,7 +392,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                   builder: (context, categoryProvider, child) {
                     final category = categoryProvider.getCategoryById(transaction.categoryId);
 
-                    return ModernTransactionCard(
+                    return TransactionCard(
                       transaction: transaction,
                       categoryName: category?.name,
                       categoryIcon: category?.icon,

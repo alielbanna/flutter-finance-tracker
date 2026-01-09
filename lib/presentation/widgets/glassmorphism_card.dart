@@ -57,27 +57,25 @@ class GlassmorphismCard extends StatelessWidget {
             child: Container(
               padding: padding,
               decoration: BoxDecoration(
-                gradient:
-                    gradient ??
+                gradient: gradient ??
                     (isDark
                         ? LinearGradient(
-                            colors: [
-                              Colors.white.withValues(alpha: 0.05),
-                              Colors.white.withValues(alpha: 0.02),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          )
+                      colors: [
+                        Colors.white.withValues(alpha: 0.05),
+                        Colors.white.withValues(alpha: 0.02),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
                         : LinearGradient(
-                            colors: [
-                              Colors.white.withValues(alpha: opacity),
-                              Colors.white.withValues(alpha: opacity * 0.5),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          )),
-                border:
-                    border ??
+                      colors: [
+                        Colors.white.withValues(alpha: opacity),
+                        Colors.white.withValues(alpha: opacity * 0.5),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )),
+                border: border ??
                     Border.all(
                       color: Colors.white.withValues(alpha: 0.2),
                       width: 1,

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../core/constants/app_colors.dart';
-import 'home/modern_home_screen.dart';
+import 'home/home_screen.dart';
 import 'transactions/transaction_list_screen.dart';
 import 'transactions/add_transaction_screen.dart';
 import 'reports/reports_screen.dart';
@@ -17,17 +16,16 @@ class MainNavigationScreen extends StatefulWidget {
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen>
-    with TickerProviderStateMixin {
-
+    with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
   late PageController _pageController;
   late AnimationController _fabController;
 
-  final List<Widget> _screens = [
-    const ModernHomeScreen(),
-    const TransactionListScreen(),
-    const ReportsScreen(),
-    const SettingsScreen(),
+  final List<Widget> _screens = const [
+    HomeScreen(),
+    TransactionListScreen(),
+    ReportsScreen(),
+    SettingsScreen(),
   ];
 
   final List<NavigationItem> _navigationItems = [
@@ -114,8 +112,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
   }
 
   Widget _buildModernBottomBar() {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
     return Container(
-      height: 80 + MediaQuery.of(context).padding.bottom,
+      // Use minimum height with SafeArea handling
+      height: 70 + bottomPadding,
       decoration: BoxDecoration(
         color: Theme.of(context).brightness == Brightness.dark
             ? AppColors.surfaceContainerDark
@@ -129,10 +130,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
         ],
       ),
       child: SafeArea(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: _navigationItems.asMap().entries.map((entry) {
               final index = entry.key;
               final item = entry.value;
@@ -159,71 +162,92 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
     required bool isActive,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Icon with animation
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                gradient: isActive ? AppColors.primaryGradient : null,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: isActive ? [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha:0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          // Use constraints to limit height
+          constraints: const BoxConstraints(maxHeight: 48),
+          padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Icon with animation - reduced padding
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  gradient: isActive ? AppColors.primaryGradient : null,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: isActive
+                      ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                      blurRadius: 6,
+                      offset: const Offset(0, 1),
+                    ),
+                  ]
+                      : null,
+                ),
+                child: Icon(
+                  isActive ? item.activeIcon : item.icon,
+                  size: 20,
+                  color: isActive
+                      ? Colors.white
+                      : Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondary,
+                ),
+              ),
+
+              // Minimal spacing
+              const SizedBox(height: 1),
+
+              // Label - with strict size constraints
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 200),
+                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                      color: isActive
+                          ? AppColors.primary
+                          : Theme.of(context).brightness == Brightness.dark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondary,
+                      fontWeight:
+                      isActive ? FontWeight.w600 : FontWeight.normal,
+                      fontSize: 10,
+                      height: 1.0,
+                    ),
+                    child: Text(
+                      item.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.clip,
+                    ),
                   ),
-                ] : null,
+                ),
               ),
-              child: Icon(
-                isActive ? item.activeIcon : item.icon,
-                size: 24,
-                color: isActive
-                    ? Colors.white
-                    : Theme.of(context).brightness == Brightness.dark
-                    ? AppColors.textSecondaryDark
-                    : AppColors.textSecondary,
-              ),
-            )
-                .animate(target: isActive ? 1 : 0)
-                .scale(begin: const Offset(1, 1), end: const Offset(1.1, 1.1))
-                .fadeIn(),
 
-            const SizedBox(height: 4),
-
-            // Label
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 200),
-              style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                color: isActive
-                    ? AppColors.primary
-                    : Theme.of(context).brightness == Brightness.dark
-                    ? AppColors.textSecondaryDark
-                    : AppColors.textSecondary,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-              ),
-              child: Text(item.label),
-            ),
-
-            // Active indicator
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              height: 2,
-              width: isActive ? 20 : 0,
-              margin: const EdgeInsets.only(top: 4),
-              decoration: BoxDecoration(
-                gradient: AppColors.primaryGradient,
-                borderRadius: BorderRadius.circular(1),
-              ),
-            ),
-          ],
+              // Active indicator - conditional rendering to save space
+              if (isActive)
+                Container(
+                  height: 2,
+                  width: 12,
+                  margin: const EdgeInsets.only(top: 1),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.primaryGradient,
+                    borderRadius: BorderRadius.circular(1),
+                  ),
+                )
+              else
+                const SizedBox(height: 2), // Reserve space when not active
+            ],
+          ),
         ),
       ),
     );
@@ -231,27 +255,36 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
 
   Widget _buildFloatingActionButton() {
     return ScaleTransition(
-      scale: _fabController,
+      scale: CurvedAnimation(
+        parent: _fabController,
+        curve: Curves.easeOutBack,
+      ),
       child: Container(
+        width: 56,
+        height: 56,
         decoration: BoxDecoration(
           gradient: AppColors.primaryGradient,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha:0.4),
+              color: AppColors.primary.withValues(alpha: 0.4),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
           ],
         ),
-        child: FloatingActionButton(
-          onPressed: _navigateToAddTransaction,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          child: const Icon(
-            Icons.add_rounded,
-            color: Colors.white,
-            size: 28,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: _navigateToAddTransaction,
+            borderRadius: BorderRadius.circular(16),
+            child: const Center(
+              child: Icon(
+                Icons.add_rounded,
+                color: Colors.white,
+                size: 28,
+              ),
+            ),
           ),
         ),
       ),
@@ -261,7 +294,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
   void _navigateToAddTransaction() {
     HapticFeedback.mediumImpact();
 
-    // Navigate to add transaction from current context
     Navigator.of(context).push(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>

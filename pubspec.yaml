@@ -41,6 +41,9 @@ dependencies:
   flex_color_scheme: ^8.2.0
   flutter_svg: ^2.2.0
   iconsax: ^0.0.8
+  pdf: ^3.11.3
+  printing: ^5.14.2
+  share_plus: ^12.0.1
 
 dev_dependencies:
   flutter_test:

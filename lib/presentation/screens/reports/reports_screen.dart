@@ -4,6 +4,13 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'package:csv/csv.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../domain/entities/transaction.dart';
@@ -930,31 +937,421 @@ class _ReportsScreenState extends State<ReportsScreen>
             ListTile(
               leading: const Icon(Icons.picture_as_pdf_rounded, color: AppColors.error),
               title: const Text('Export as PDF'),
+              subtitle: const Text('Professional report document'),
               onTap: () {
                 Navigator.pop(context);
-                // TODO: Implement PDF export
+                _exportToPDF();
               },
             ),
 
             ListTile(
               leading: const Icon(Icons.table_chart_rounded, color: AppColors.success),
               title: const Text('Export as CSV'),
+              subtitle: const Text('Spreadsheet compatible'),
               onTap: () {
                 Navigator.pop(context);
-                // TODO: Implement CSV export
+                _exportToCSV();
               },
             ),
 
             ListTile(
               leading: const Icon(Icons.share_rounded, color: AppColors.info),
               title: const Text('Share Report'),
+              subtitle: const Text('Share via apps'),
               onTap: () {
                 Navigator.pop(context);
-                // TODO: Implement share functionality
+                _shareReport();
               },
             ),
           ],
         ),
+      ),
+    );
+  }
+
+// ============================================================================
+// PDF Export Implementation
+// ============================================================================
+
+  Future<void> _exportToPDF() async {
+    try {
+      // Show loading
+      _showLoadingDialog('Generating PDF...');
+
+      final transactionProvider = context.read<TransactionProvider>();
+      final categoryProvider = context.read<CategoryProvider>();
+
+      final transactions = transactionProvider.transactions;
+      final income = transactionProvider.monthlyIncome;
+      final expense = transactionProvider.monthlyExpense;
+      final balance = income - expense;
+
+      // Create PDF document
+      final pdf = pw.Document();
+
+      // Add pages
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(32),
+          build: (context) => [
+            // Header
+            _buildPDFHeader(),
+            pw.SizedBox(height: 20),
+
+            // Summary Section
+            _buildPDFSummary(income, expense, balance),
+            pw.SizedBox(height: 30),
+
+            // Transactions Table
+            _buildPDFTransactionsTable(transactions, categoryProvider),
+
+            pw.SizedBox(height: 20),
+
+            // Footer
+            _buildPDFFooter(),
+          ],
+        ),
+      );
+
+      // Hide loading
+      if (mounted) Navigator.pop(context);
+
+      // Preview and share PDF
+      await Printing.layoutPdf(
+        onLayout: (format) async => pdf.save(),
+        name: 'financial_report_${DateFormat('yyyy_MM_dd').format(DateTime.now())}.pdf',
+      );
+
+      _showSuccessSnackbar('PDF generated successfully');
+    } catch (e) {
+      if (mounted) Navigator.pop(context);
+      _showErrorSnackbar('Failed to generate PDF: $e');
+    }
+  }
+
+  pw.Widget _buildPDFHeader() {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          'Financial Report',
+          style: pw.TextStyle(
+            fontSize: 28,
+            fontWeight: pw.FontWeight.bold,
+          ),
+        ),
+        pw.SizedBox(height: 8),
+        pw.Text(
+          'Generated on ${DateFormat('MMMM dd, yyyy').format(DateTime.now())}',
+          style: const pw.TextStyle(
+            fontSize: 12,
+            color: PdfColors.grey700,
+          ),
+        ),
+        pw.Divider(thickness: 2),
+      ],
+    );
+  }
+
+  pw.Widget _buildPDFSummary(double income, double expense, double balance) {
+    final currencyFormat = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
+
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(16),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.grey200,
+        borderRadius: pw.BorderRadius.circular(8),
+      ),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
+        children: [
+          _buildPDFSummaryItem('Income', currencyFormat.format(income), PdfColors.green),
+          _buildPDFSummaryItem('Expense', currencyFormat.format(expense), PdfColors.red),
+          _buildPDFSummaryItem('Balance', currencyFormat.format(balance),
+              balance >= 0 ? PdfColors.green : PdfColors.red),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildPDFSummaryItem(String label, String value, PdfColor color) {
+    return pw.Column(
+      children: [
+        pw.Text(
+          label,
+          style: const pw.TextStyle(
+            fontSize: 10,
+            color: PdfColors.grey700,
+          ),
+        ),
+        pw.SizedBox(height: 4),
+        pw.Text(
+          value,
+          style: pw.TextStyle(
+            fontSize: 16,
+            fontWeight: pw.FontWeight.bold,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _buildPDFTransactionsTable(
+      List<Transaction> transactions,
+      CategoryProvider categoryProvider,
+      ) {
+    final dateFormat = DateFormat('MMM dd, yyyy');
+    final currencyFormat = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          'Transactions',
+          style: pw.TextStyle(
+            fontSize: 18,
+            fontWeight: pw.FontWeight.bold,
+          ),
+        ),
+        pw.SizedBox(height: 12),
+        pw.TableHelper.fromTextArray(
+          headerStyle: pw.TextStyle(
+            fontWeight: pw.FontWeight.bold,
+            fontSize: 10,
+          ),
+          cellStyle: const pw.TextStyle(fontSize: 9),
+          headerDecoration: const pw.BoxDecoration(
+            color: PdfColors.grey300,
+          ),
+          cellHeight: 30,
+          cellAlignments: {
+            0: pw.Alignment.centerLeft,
+            1: pw.Alignment.centerLeft,
+            2: pw.Alignment.center,
+            3: pw.Alignment.centerRight,
+            4: pw.Alignment.center,
+          },
+          headers: ['Date', 'Description', 'Category', 'Amount', 'Type'],
+          data: transactions.take(50).map((transaction) {
+            final category = categoryProvider.getCategoryById(transaction.categoryId);
+            return [
+              dateFormat.format(transaction.date),
+              transaction.description,
+              category?.name ?? 'Unknown',
+              currencyFormat.format(transaction.amount),
+              transaction.isIncome ? 'Income' : 'Expense',
+            ];
+          }).toList(),
+        ),
+        if (transactions.length > 50)
+          pw.Padding(
+            padding: const pw.EdgeInsets.only(top: 8),
+            child: pw.Text(
+              'Showing first 50 of ${transactions.length} transactions',
+              style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+            ),
+          ),
+      ],
+    );
+  }
+
+  pw.Widget _buildPDFFooter() {
+    return pw.Container(
+      alignment: pw.Alignment.center,
+      child: pw.Column(
+        children: [
+          pw.Divider(),
+          pw.SizedBox(height: 8),
+          pw.Text(
+            'Generated by Money Master App',
+            style: const pw.TextStyle(
+              fontSize: 10,
+              color: PdfColors.grey600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+// ============================================================================
+// CSV Export Implementation
+// ============================================================================
+
+  Future<void> _exportToCSV() async {
+    try {
+      _showLoadingDialog('Generating CSV...');
+
+      final transactionProvider = context.read<TransactionProvider>();
+      final categoryProvider = context.read<CategoryProvider>();
+      final transactions = transactionProvider.transactions;
+
+      // Create CSV data
+      List<List<dynamic>> csvData = [
+        // Headers
+        ['Date', 'Description', 'Category', 'Amount', 'Type', 'Notes', 'Created At'],
+      ];
+
+      // Add transaction rows
+      final dateFormat = DateFormat('yyyy-MM-dd');
+      final timeFormat = DateFormat('yyyy-MM-dd HH:mm:ss');
+
+      for (var transaction in transactions) {
+        final category = categoryProvider.getCategoryById(transaction.categoryId);
+        csvData.add([
+          dateFormat.format(transaction.date),
+          transaction.description,
+          category?.name ?? 'Unknown',
+          transaction.amount,
+          transaction.isIncome ? 'Income' : 'Expense',
+          transaction.notes ?? '',
+          timeFormat.format(transaction.createdAt),
+        ]);
+      }
+
+      // Convert to CSV string
+      String csv = const ListToCsvConverter().convert(csvData);
+
+      // Get directory to save file
+      final directory = await getApplicationDocumentsDirectory();
+      final fileName = 'transactions_${DateFormat('yyyy_MM_dd_HHmmss').format(DateTime.now())}.csv';
+      final filePath = '${directory.path}/$fileName';
+
+      // Write file
+      final file = File(filePath);
+      await file.writeAsString(csv);
+
+      if (mounted) Navigator.pop(context);
+
+      // Share the file
+      await Share.shareXFiles(
+        [XFile(filePath)],
+        subject: 'Financial Transactions Export',
+        text: 'Here is your transactions export from Money Master',
+      );
+
+      _showSuccessSnackbar('CSV exported successfully');
+    } catch (e) {
+      if (mounted) Navigator.pop(context);
+      _showErrorSnackbar('Failed to export CSV: $e');
+    }
+  }
+
+// ============================================================================
+// Share Report Implementation
+// ============================================================================
+
+  Future<void> _shareReport() async {
+    try {
+      final transactionProvider = context.read<TransactionProvider>();
+      final income = transactionProvider.monthlyIncome;
+      final expense = transactionProvider.monthlyExpense;
+      final balance = income - expense;
+      final transactions = transactionProvider.transactions;
+
+      final currencyFormat = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
+      final dateFormat = DateFormat('MMMM yyyy');
+
+      // Create text report
+      final report = '''
+📊 Financial Report - ${dateFormat.format(DateTime.now())}
+
+💰 Summary:
+• Income: ${currencyFormat.format(income)}
+• Expense: ${currencyFormat.format(expense)}
+• Balance: ${currencyFormat.format(balance)}
+
+📝 Total Transactions: ${transactions.length}
+
+Recent Transactions:
+${_getRecentTransactionsText(transactions.take(5).toList())}
+
+Generated by Money Master App
+${DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now())}
+    ''';
+
+      await Share.share(
+        report,
+        subject: 'Financial Report - ${dateFormat.format(DateTime.now())}',
+      );
+
+      _showSuccessSnackbar('Report shared successfully');
+    } catch (e) {
+      _showErrorSnackbar('Failed to share report: $e');
+    }
+  }
+
+  String _getRecentTransactionsText(List<Transaction> transactions) {
+    final categoryProvider = context.read<CategoryProvider>();
+    final dateFormat = DateFormat('MMM dd');
+    final currencyFormat = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
+
+    return transactions.map((t) {
+      final category = categoryProvider.getCategoryById(t.categoryId);
+      final sign = t.isIncome ? '+' : '-';
+      return '• ${dateFormat.format(t.date)}: ${t.description} ($sign${currencyFormat.format(t.amount)}) - ${category?.name ?? 'Unknown'}';
+    }).join('\n');
+  }
+
+// ============================================================================
+// Helper Methods
+// ============================================================================
+
+  void _showLoadingDialog(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(message),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSuccessSnackbar(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_rounded, color: Colors.white),
+            const SizedBox(width: 12),
+            Flexible(child: Text(message)),
+          ],
+        ),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  void _showErrorSnackbar(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error_rounded, color: Colors.white),
+            const SizedBox(width: 12),
+            Flexible(child: Text(message)),
+          ],
+        ),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 4),
       ),
     );
   }

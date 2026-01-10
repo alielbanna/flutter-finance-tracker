@@ -100,8 +100,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
         children: _screens,
       ),
 
-      // Modern Bottom Navigation Bar
-      bottomNavigationBar: _buildModernBottomBar(),
+      // Bottom Navigation Bar
+      bottomNavigationBar: _buildBottomBar(),
 
       // Show FAB only on Home and Transactions screens
       floatingActionButton: (_currentIndex == 0 || _currentIndex == 1)
@@ -111,7 +111,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
     );
   }
 
-  Widget _buildModernBottomBar() {
+  Widget _buildBottomBar() {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Container(

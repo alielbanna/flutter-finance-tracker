@@ -53,8 +53,8 @@ class _HomeScreenState extends State<HomeScreen>
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // Modern App Bar - NO ANIMATION ON SLIVER!
-          _buildModernAppBar(),
+          // App Bar - NO ANIMATION ON SLIVER!
+          _buildAppBar(),
 
           // Balance Card
           SliverToBoxAdapter(
@@ -166,7 +166,7 @@ class _HomeScreenState extends State<HomeScreen>
         ],
       ),
 
-      // Modern Floating Action Button
+      // Floating Action Button
       // floatingActionButton: ScaleTransition(
       //   scale: CurvedAnimation(
       //     parent: _fabController,
@@ -216,7 +216,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildModernAppBar() {
+  Widget _buildAppBar() {
     // CRITICAL: Cannot use .animate() on SliverAppBar!
     // Slivers MUST return RenderSliver, not RenderBox
     return SliverAppBar(

@@ -60,8 +60,8 @@ class _ReportsScreenState extends State<ReportsScreen>
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // Modern App Bar
-          _buildModernSliverAppBar(),
+          // App Bar
+          _buildSliverAppBar(),
 
           // Period Selector
           SliverToBoxAdapter(
@@ -92,7 +92,7 @@ class _ReportsScreenState extends State<ReportsScreen>
     );
   }
 
-  Widget _buildModernSliverAppBar() {
+  Widget _buildSliverAppBar() {
     return SliverAppBar(
       expandedHeight: 120,
       floating: false,

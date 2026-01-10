@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Modern Primary Colors - iOS inspired
+  // Primary Colors - iOS inspired
   static const Color primary = Color(0xFF007AFF); // iOS Blue
   static const Color primaryDark = Color(0xFF0056CC);
   static const Color secondary = Color(0xFF34C759); // iOS Green
@@ -11,7 +11,7 @@ class AppColors {
   static const Color glass = Color(0x20FFFFFF);
   static const Color glassDark = Color(0x15000000);
 
-  // Modern Gradients
+  // Gradients
   static const List<Color> primaryGradientColors = [
     Color(0xFF667eea),
     Color(0xFF764ba2),
@@ -33,7 +33,7 @@ class AppColors {
   static const Color incomeLight = Color(0xFFE8F5E8);
   static const Color expenseLight = Color(0xFFFFEBEA);
 
-  // Background Colors - Modern
+  // Background Colors
   static const Color background = Color(0xFFF2F4F7); // Light grey-blue
   static const Color surface = Colors.white;
   static const Color surfaceVariant = Color(0xFFF8F9FA);
@@ -51,7 +51,7 @@ class AppColors {
   static const Color warning = Color(0xFFFF9500);
   static const Color info = Color(0xFF007AFF);
 
-  // Chart Colors - Modern Palette
+  // Chart Colors - Palette
   static const List<Color> chartColors = [
     Color(0xFF007AFF), // Blue
     Color(0xFF34C759), // Green

@@ -110,8 +110,8 @@ class _TransactionListScreenState extends State<TransactionListScreen>
         controller: _scrollController,
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // Modern App Bar with Search
-          _buildModernSliverAppBar(),
+          // App Bar with Search
+          _buildSliverAppBar(),
 
           // Filter Bar
           SliverToBoxAdapter(
@@ -160,7 +160,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
     );
   }
 
-  Widget _buildModernSliverAppBar() {
+  Widget _buildSliverAppBar() {
     return SliverAppBar(
       expandedHeight: _isSearchActive ? 140 : 120,
       floating: false,

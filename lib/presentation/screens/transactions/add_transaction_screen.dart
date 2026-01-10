@@ -145,7 +145,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: _buildModernAppBar(),
+      appBar: _buildAppBar(),
       body: _isCategoriesLoading
           ? Center(
         child: Column(
@@ -232,7 +232,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     );
   }
 
-  PreferredSizeWidget _buildModernAppBar() {
+  PreferredSizeWidget _buildAppBar() {
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,

@@ -1252,7 +1252,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              '${transaction.isIncome ? '+' : '-'}\${transaction.amount.toStringAsFixed(2)}',
+                              '${transaction.isIncome ? '+' : '-'}${transaction.amount.toStringAsFixed(2)}',
                               style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,

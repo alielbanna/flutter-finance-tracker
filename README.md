@@ -88,6 +88,7 @@ Money Master is a comprehensive personal finance management application designed
   <img src="screenshots/home.png" width="200" />
   <img src="screenshots/add.png" width="200" />
   <img src="screenshots/trans.png" width="200" />
+  <img src="screenshots/details.png" width="200" />
   <img src="screenshots/filter.png" width="200" />
   <img src="screenshots/report.png" width="200" />
   <img src="screenshots/export.png" width="200" />

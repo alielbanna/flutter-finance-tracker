@@ -100,22 +100,22 @@ class _ReportsScreenState extends State<ReportsScreen>
       stretch: true,
       backgroundColor: Colors.transparent,
       elevation: 0,
-      leading: Container(
-        margin: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.2),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: IconButton(
-          onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-        ),
-      ),
+      // leading: Container(
+      //   margin: const EdgeInsets.all(8),
+      //   decoration: BoxDecoration(
+      //     color: Colors.white.withValues(alpha: 0.2),
+      //     borderRadius: BorderRadius.circular(12),
+      //   ),
+      //   child: IconButton(
+      //     onPressed: () => Navigator.of(context).pop(),
+      //     icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+      //   ),
+      // ),
       actions: [
         Container(
           margin: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha:0.2),
+            color: Colors.white.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(12),
           ),
           child: IconButton(
@@ -146,12 +146,16 @@ class _ReportsScreenState extends State<ReportsScreen>
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   Text(
                     _getPeriodTitle(),
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.white.withValues(alpha:0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -160,7 +164,7 @@ class _ReportsScreenState extends State<ReportsScreen>
           ),
         ),
       ),
-    ).animate().slideY(begin: -1, duration: 800.ms, curve: Curves.easeOutCubic);
+    );
   }
 
   Widget _buildPeriodSelector() {
@@ -376,8 +380,10 @@ class _ReportsScreenState extends State<ReportsScreen>
                 borderRadius: BorderRadius.circular(12),
               ),
               child: TabBar(
+                indicatorPadding: const EdgeInsetsGeometry.symmetric(horizontal: -5,vertical: 5),
                 controller: _tabController,
                 indicator: BoxDecoration(
+                  
                   gradient: AppColors.primaryGradient,
                   borderRadius: BorderRadius.circular(12),
                 ),

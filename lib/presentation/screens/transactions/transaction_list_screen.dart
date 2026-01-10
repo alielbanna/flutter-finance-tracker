@@ -20,11 +20,10 @@ class TransactionListScreen extends StatefulWidget {
 }
 
 class _TransactionListScreenState extends State<TransactionListScreen>
-    with TickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
 
   // Animation Controllers
   late AnimationController _searchAnimController;
-  late AnimationController _filterAnimController;
 
   // Text and Scroll Controllers
   final _searchTextController = TextEditingController();
@@ -35,8 +34,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
   TransactionType? _selectedTypeFilter;
   String? _selectedCategoryFilter;
   DateTimeRange? _selectedDateRange;
-
-  List<Transaction> _filteredTransactions = [];
   String _searchQuery = '';
 
   @override
@@ -48,66 +45,61 @@ class _TransactionListScreenState extends State<TransactionListScreen>
       vsync: this,
     );
 
-    _filterAnimController = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
-
     // Load data
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<TransactionProvider>().loadTransactions();
-      context.read<CategoryProvider>().loadCategories();
+      if (mounted) {
+        context.read<TransactionProvider>().loadTransactions();
+        context.read<CategoryProvider>().loadCategories();
+      }
     });
   }
 
   @override
   void dispose() {
     _searchAnimController.dispose();
-    _filterAnimController.dispose();
     _searchTextController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
-  void _updateFilteredTransactions(List<Transaction> allTransactions) {
-    setState(() {
-      _filteredTransactions = allTransactions.where((transaction) {
-        // Search filter
-        if (_searchQuery.isNotEmpty) {
-          final query = _searchQuery.toLowerCase();
-          if (!transaction.description.toLowerCase().contains(query) &&
-              !(transaction.notes?.toLowerCase().contains(query) ?? false)) {
-            return false;
-          }
-        }
-
-        // Type filter
-        if (_selectedTypeFilter != null && transaction.type != _selectedTypeFilter) {
+  // ✅ FIXED: Pure function - no setState!
+  List<Transaction> _getFilteredTransactions(List<Transaction> allTransactions) {
+    return allTransactions.where((transaction) {
+      // Search filter
+      if (_searchQuery.isNotEmpty) {
+        final query = _searchQuery.toLowerCase();
+        if (!transaction.description.toLowerCase().contains(query) &&
+            !(transaction.notes?.toLowerCase().contains(query) ?? false)) {
           return false;
         }
+      }
 
-        // Category filter
-        if (_selectedCategoryFilter != null &&
-            transaction.categoryId != _selectedCategoryFilter) {
+      // Type filter
+      if (_selectedTypeFilter != null && transaction.type != _selectedTypeFilter) {
+        return false;
+      }
+
+      // Category filter
+      if (_selectedCategoryFilter != null &&
+          transaction.categoryId != _selectedCategoryFilter) {
+        return false;
+      }
+
+      // Date range filter
+      if (_selectedDateRange != null) {
+        final transactionDate = DateTime(
+          transaction.date.year,
+          transaction.date.month,
+          transaction.date.day,
+        );
+        if (transactionDate.isBefore(_selectedDateRange!.start) ||
+            transactionDate.isAfter(_selectedDateRange!.end)) {
           return false;
         }
+      }
 
-        // Date range filter
-        if (_selectedDateRange != null) {
-          final transactionDate = DateTime(
-            transaction.date.year,
-            transaction.date.month,
-            transaction.date.day,
-          );
-          if (transactionDate.isBefore(_selectedDateRange!.start) ||
-              transactionDate.isAfter(_selectedDateRange!.end)) {
-            return false;
-          }
-        }
-
-        return true;
-      }).toList();
-    });
+      return true;
+    }).toList();
   }
 
   @override
@@ -126,7 +118,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
             child: _buildFilterBar(),
           ),
 
-          // Transaction List
+          // Transaction List - ✅ FIXED
           Consumer<TransactionProvider>(
             builder: (context, provider, child) {
               if (provider.isLoading) {
@@ -143,15 +135,16 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                 );
               }
 
-              _updateFilteredTransactions(provider.transactions);
+              // ✅ Calculate filtered transactions WITHOUT setState
+              final filteredTransactions = _getFilteredTransactions(provider.transactions);
 
-              if (_filteredTransactions.isEmpty) {
+              if (filteredTransactions.isEmpty) {
                 return SliverToBoxAdapter(
                   child: _buildEmptyState(),
                 );
               }
 
-              return _buildTransactionList();
+              return _buildTransactionList(filteredTransactions);
             },
           ),
 
@@ -163,7 +156,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
       ),
 
       // Floating Action Button
-      floatingActionButton: _buildFloatingActionButton(),
+      // floatingActionButton: _buildFloatingActionButton(),
     );
   }
 
@@ -175,22 +168,22 @@ class _TransactionListScreenState extends State<TransactionListScreen>
       stretch: true,
       backgroundColor: Colors.transparent,
       elevation: 0,
-      leading: Container(
-        margin: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.2),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: IconButton(
-          onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-        ),
-      ),
+      // leading: Container(
+      //   margin: const EdgeInsets.all(8),
+      //   decoration: BoxDecoration(
+      //     color: Colors.white.withValues(alpha: 0.2),
+      //     borderRadius: BorderRadius.circular(12),
+      //   ),
+      //   child: IconButton(
+      //     onPressed: () => Navigator.of(context).pop(),
+      //     icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+      //   ),
+      // ),
       actions: [
         Container(
           margin: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha:0.2),
+            color: Colors.white.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(12),
           ),
           child: IconButton(
@@ -204,7 +197,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
         Container(
           margin: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha:0.2),
+            color: Colors.white.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(12),
           ),
           child: IconButton(
@@ -236,13 +229,17 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                    // ✅ FIXED: Recalculate count instead of using state
                     Consumer<TransactionProvider>(
                       builder: (context, provider, child) {
+                        final filteredCount = _getFilteredTransactions(provider.transactions).length;
                         return Text(
-                          '${_filteredTransactions.length} transactions',
+                          '$filteredCount transactions',
                           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Colors.white.withValues(alpha:0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                           ),
                         );
                       },
@@ -252,19 +249,19 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                     Container(
                       margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha:0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white.withValues(alpha:0.3)),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                       ),
                       child: TextField(
                         controller: _searchTextController,
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           hintText: 'Search transactions...',
-                          hintStyle: TextStyle(color: Colors.white.withValues(alpha:0.7)),
+                          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
                           prefixIcon: Icon(
                             Icons.search_rounded,
-                            color: Colors.white.withValues(alpha:0.7),
+                            color: Colors.white.withValues(alpha: 0.7),
                           ),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(
@@ -376,11 +373,12 @@ class _TransactionListScreenState extends State<TransactionListScreen>
     );
   }
 
-  Widget _buildTransactionList() {
+  // ✅ FIXED: Accept filtered list as parameter
+  Widget _buildTransactionList(List<Transaction> filteredTransactions) {
     return SliverList(
       delegate: SliverChildBuilderDelegate(
             (context, index) {
-          final transaction = _filteredTransactions[index];
+          final transaction = filteredTransactions[index];
 
           return AnimationConfiguration.staggeredList(
             position: index,
@@ -408,7 +406,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
             ),
           );
         },
-        childCount: _filteredTransactions.length,
+        childCount: filteredTransactions.length,
       ),
     );
   }
@@ -432,7 +430,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
           ),
           child: Row(
             children: [
-              // Icon shimmer
               Container(
                 width: 48,
                 height: 48,
@@ -442,11 +439,10 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                 ),
               ),
               const SizedBox(width: 16),
-
-              // Content shimmer
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
                       height: 16,
@@ -467,10 +463,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                   ],
                 ),
               ),
-
               const SizedBox(width: 12),
-
-              // Amount shimmer
               Container(
                 height: 20,
                 width: 80,
@@ -491,11 +484,12 @@ class _TransactionListScreenState extends State<TransactionListScreen>
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.error.withValues(alpha:0.1),
+        color: AppColors.error.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.error.withValues(alpha:0.3)),
+        border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             Icons.error_outline_rounded,
@@ -543,13 +537,14 @@ class _TransactionListScreenState extends State<TransactionListScreen>
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(48),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               gradient: hasFilters
                   ? LinearGradient(
-                colors: [AppColors.info.withValues(alpha:0.8), AppColors.info],
+                colors: [AppColors.info.withValues(alpha: 0.8), AppColors.info],
               )
                   : AppColors.primaryGradient,
               shape: BoxShape.circle,
@@ -598,27 +593,32 @@ class _TransactionListScreenState extends State<TransactionListScreen>
 
   Widget _buildFloatingActionButton() {
     return Container(
+      width: 56,
+      height: 56,
       decoration: BoxDecoration(
         gradient: AppColors.primaryGradient,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha:0.4),
+            color: AppColors.primary.withValues(alpha: 0.4),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: FloatingActionButton(
-        onPressed: () => _navigateToAddTransaction(),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _navigateToAddTransaction(),
+          borderRadius: BorderRadius.circular(16),
+          child: const Center(
+            child: Icon(Icons.add_rounded, color: Colors.white, size: 28),
+          ),
+        ),
       ),
     );
   }
 
-  // Helper methods
   void _toggleSearch() {
     setState(() {
       _isSearchActive = !_isSearchActive;
@@ -657,7 +657,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
       ),
       child: Column(
         children: [
-          // Handle bar
           Container(
             margin: const EdgeInsets.symmetric(vertical: 12),
             width: 40,
@@ -667,8 +666,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-
-          // Header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             child: Row(
@@ -687,17 +684,13 @@ class _TransactionListScreenState extends State<TransactionListScreen>
               ],
             ),
           ),
-
           const Divider(),
-
-          // Filter content
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Transaction Type Filter
                   _buildFilterSection(
                     title: 'Transaction Type',
                     child: Row(
@@ -716,10 +709,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 32),
-
-                  // Category Filter
                   Consumer<CategoryProvider>(
                     builder: (context, provider, child) {
                       if (provider.categories.isEmpty) {
@@ -741,10 +731,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                       );
                     },
                   ),
-
                   const SizedBox(height: 32),
-
-                  // Date Range Filter
                   _buildFilterSection(
                     title: 'Date Range',
                     child: Column(
@@ -763,8 +750,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
               ),
             ),
           ),
-
-          // Apply button
           Container(
             padding: const EdgeInsets.all(24),
             child: SizedBox(
@@ -829,10 +814,10 @@ class _TransactionListScreenState extends State<TransactionListScreen>
         decoration: BoxDecoration(
           color: isSelected
               ? (type == TransactionType.income
-              ? AppColors.income.withValues(alpha:0.1)
+              ? AppColors.income.withValues(alpha: 0.1)
               : type == TransactionType.expense
-              ? AppColors.expense.withValues(alpha:0.1)
-              : AppColors.primary.withValues(alpha:0.1))
+              ? AppColors.expense.withValues(alpha: 0.1)
+              : AppColors.primary.withValues(alpha: 0.1))
               : AppColors.surfaceVariant,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
@@ -842,7 +827,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                 : type == TransactionType.expense
                 ? AppColors.expense
                 : AppColors.primary)
-                : AppColors.textHint.withValues(alpha:0.3),
+                : AppColors.textHint.withValues(alpha: 0.3),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -876,7 +861,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
         });
         HapticFeedback.lightImpact();
       },
-      selectedColor: AppColors.primary.withValues(alpha:0.2),
+      selectedColor: AppColors.primary.withValues(alpha: 0.2),
       checkmarkColor: AppColors.primary,
       labelStyle: TextStyle(
         color: isSelected ? AppColors.primary : AppColors.textSecondary,
@@ -885,17 +870,17 @@ class _TransactionListScreenState extends State<TransactionListScreen>
     );
   }
 
-  Widget _buildDateRangeOption(String label, DateTimeRange? range, {
-    bool isCustom = false,
-    bool isClear = false,
-  }) {
+  Widget _buildDateRangeOption(
+      String label,
+      DateTimeRange? range, {
+        bool isCustom = false,
+        bool isClear = false,
+      }) {
     final isSelected = !isClear && _selectedDateRange == range;
 
     return ListTile(
       title: Text(label),
-      trailing: isSelected
-          ? Icon(Icons.check_rounded, color: AppColors.primary)
-          : null,
+      trailing: isSelected ? Icon(Icons.check_rounded, color: AppColors.primary) : null,
       selected: isSelected,
       onTap: () async {
         if (isClear) {
@@ -924,7 +909,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
     );
   }
 
-  // Date range helpers
   DateTimeRange _getTodayRange() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -961,11 +945,12 @@ class _TransactionListScreenState extends State<TransactionListScreen>
       _searchQuery = '';
       _searchTextController.clear();
     });
-    Navigator.of(context).pop();
+    if (Navigator.canPop(context)) {
+      Navigator.of(context).pop();
+    }
     HapticFeedback.lightImpact();
   }
 
-  // Navigation methods
   void _navigateToAddTransaction() async {
     HapticFeedback.mediumImpact();
 
@@ -991,8 +976,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
       ),
     );
 
-    // Refresh data if transaction was added
-    if (result != null) {
+    if (result != null && mounted) {
       context.read<TransactionProvider>().refresh();
     }
   }
@@ -1022,8 +1006,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
       ),
     );
 
-    // Refresh data if transaction was updated
-    if (result != null) {
+    if (result != null && mounted) {
       context.read<TransactionProvider>().refresh();
     }
   }
@@ -1042,7 +1025,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.error.withValues(alpha:0.1),
+                color: AppColors.error.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
@@ -1052,7 +1035,13 @@ class _TransactionListScreenState extends State<TransactionListScreen>
               ),
             ),
             const SizedBox(width: 12),
-            const Text('Delete Transaction'),
+            const Flexible(
+              child: Text(
+                'Delete Transaction',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
         content: Column(
@@ -1067,17 +1056,20 @@ class _TransactionListScreenState extends State<TransactionListScreen>
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.surfaceVariant.withValues(alpha:0.5),
+                color: AppColors.surfaceVariant.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     transaction.description,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -1110,15 +1102,11 @@ class _TransactionListScreenState extends State<TransactionListScreen>
               context.read<TransactionProvider>().deleteTransaction(transaction.id);
               Navigator.of(context).pop();
 
-              // Show success snackbar
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Row(
-                    children: const [
-                      Icon(
-                        Icons.delete_rounded,
-                        color: Colors.white,
-                      ),
+                  content: const Row(
+                    children: [
+                      Icon(Icons.delete_rounded, color: Colors.white),
                       SizedBox(width: 12),
                       Text('Transaction deleted'),
                     ],
@@ -1175,7 +1163,6 @@ class _TransactionListScreenState extends State<TransactionListScreen>
           ),
           child: Column(
             children: [
-              // Handle bar
               Container(
                 margin: const EdgeInsets.symmetric(vertical: 12),
                 width: 40,
@@ -1185,20 +1172,23 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-
-              // Header
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Transaction Details',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
+                    Flexible(
+                      child: Text(
+                        'Transaction Details',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
                           onPressed: () {
@@ -1207,7 +1197,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                           },
                           icon: const Icon(Icons.edit_rounded),
                           style: IconButton.styleFrom(
-                            backgroundColor: AppColors.info.withValues(alpha:0.1),
+                            backgroundColor: AppColors.info.withValues(alpha: 0.1),
                             foregroundColor: AppColors.info,
                           ),
                         ),
@@ -1219,7 +1209,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                           },
                           icon: const Icon(Icons.delete_rounded),
                           style: IconButton.styleFrom(
-                            backgroundColor: AppColors.error.withValues(alpha:0.1),
+                            backgroundColor: AppColors.error.withValues(alpha: 0.1),
                             foregroundColor: AppColors.error,
                           ),
                         ),
@@ -1228,16 +1218,12 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                   ],
                 ),
               ),
-
               const Divider(),
-
-              // Content
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [
-                      // Amount Card
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(24),
@@ -1249,7 +1235,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                           boxShadow: [
                             BoxShadow(
                               color: (transaction.isIncome ? AppColors.income : AppColors.expense)
-                                  .withValues(alpha:0.3),
+                                  .withValues(alpha: 0.3),
                               blurRadius: 20,
                               offset: const Offset(0, 8),
                             ),
@@ -1275,24 +1261,19 @@ class _TransactionListScreenState extends State<TransactionListScreen>
                             Text(
                               transaction.isIncome ? 'Income' : 'Expense',
                               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: Colors.white.withValues(alpha:0.9),
+                                color: Colors.white.withValues(alpha: 0.9),
                               ),
                             ),
                           ],
                         ),
                       ),
-
                       const SizedBox(height: 24),
-
-                      // Details
                       _buildDetailRow('Description', transaction.description),
                       _buildDetailRow('Category', '${category?.icon ?? '📦'} ${category?.name ?? 'Unknown'}'),
                       _buildDetailRow('Date', DateFormat('EEEE, MMMM dd, yyyy').format(transaction.date)),
                       _buildDetailRow('Time', DateFormat('hh:mm a').format(transaction.date)),
-
                       if (transaction.notes != null && transaction.notes!.isNotEmpty)
                         _buildDetailRow('Notes', transaction.notes!),
-
                       _buildDetailRow('Created', DateFormat('MMM dd, yyyy at hh:mm a').format(transaction.createdAt)),
                     ],
                   ),
@@ -1310,7 +1291,7 @@ class _TransactionListScreenState extends State<TransactionListScreen>
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surfaceVariant.withValues(alpha:0.5),
+        color: AppColors.surfaceVariant.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -1339,4 +1320,5 @@ class _TransactionListScreenState extends State<TransactionListScreen>
         ],
       ),
     );
-  }}
+  }
+}

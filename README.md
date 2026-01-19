@@ -415,10 +415,9 @@ in the Software without restriction...
 
 ## 👨‍💻 Author
 
-**Ahmed Mohamed Ali**
-- GitHub: [@ahmed-flutter-dev](https://github.com/ahmed-flutter-dev)
-- LinkedIn: [ahmed-mohamed-flutter](https://linkedin.com/in/ahmed-mohamed-flutter)
-- Email: ahmed.mohamed.dev@gmail.com
+**Ali ElBanna**
+- GitHub: [@ahmed-flutter-dev](https://github.com/alielbanna)
+- Email: alielbana6662@gmail.com
 
 ---
 
